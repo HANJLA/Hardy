@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Zarkan Jewelry – Admin Extension</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
+    />
+
+    <script>
+      /* GLOBAL STATE */
+      let isAdmin = false; // Tracks whether admin is logged in
+      let currentUPI = "hanjla1@paytm"; // Default UPI
+
+      // We'll store products in an array for demonstration
+      // (In real life, you'd fetch from a database)
+      let products = [
+        {
+          id: 1,
+          name: "Suit Salwar 1",
+          price: 899,
+          oldPrice: 1999,
+          discount: 56,
+          rating: 4.5,
+          reviews: 46,
+          image:
+            "https://storage.googleapis.com/a1aa/image/aBxnqvWU1xLqANZ7IUxM8oGMEHop2LQhhqJi3XcLaAxpIdAF.jpg",
+          description:
+            "Grab our Suit Salwar 1 at a special price and enjoy timeless style.",
+        },
+        {
+          id: 2,
+          name: "Suit Salwar 2",
+          price: 999,
+          oldPrice: 2999,
+          discount: 67,
+          rating: 4.5,
+          reviews: 33,
+          image:
+            "https://storage.googleapis.com/a1aa/image/SZrrzCeWeFqpFUCnVix5JIlUSgfm6pCeiRa33Ir7MX2fVkOgC.jpg",
+          description:
+            "Suit Salwar 2 – a perfect blend of tradition and modern style.",
+        },
+        {
+          id: 3,
+          name: "Suit Salwar 3",
+          price: 699,
+          oldPrice: 1499,
+          discount: 58,
+          rating: 4.5,
+          reviews: 20,
+          image:
+            "https://storage.googleapis.com/a1aa/image/XJsB2MURekXoFqAvqemDmbef6y71JisbOZNEgtuMODmuKSHQB.jpg",
+          description: "Suit Salwar 3 – Grab it now before it’s gone.",
+        },
+        {
+          id: 4,
+          name: "Suit Salwar 4",
+          price: 999,
+          oldPrice: 2599,
+          discount: 61,
+          rating: 4.5,
+          reviews: 15,
+          image:
+            "https://storage.googleapis.com/a1aa/image/IgkiQzfZDH0cCqZfegiFmZAiWrf89QRc3Ku0bAyjiHEPLSHQB.jpg",
+          description:
+            "Suit Salwar 4 – Add a splash of elegance to your wardrobe.",
+        },
+        {
+          id: 5,
+          name: "Suit Salwar 5",
+          price: 999,
+          oldPrice: 1999,
+          discount: 50,
+          rating: 4.5,
+          reviews: 10,
+          image:
+            "https://storage.googleapis.com/a1aa/image/eGNgGURy1RQLE6U3VerVgH5m5JXfdcYLH1qhuYaltdZiFpDoA.jpg",
+          description:
+            "Suit Salwar 5 – A statement piece for any occasion.",
+        },
+        {
+          id: 6,
+          name: "Suit Salwar 6",
+          price: 1299,
+          oldPrice: 2499,
+          discount: 45,
+          rating: 4.5,
+          reviews: 25,
+          image:
+            "https://storage.googleapis.com/a1aa/image/eOucMCNPeLuLTEjgjgBN93ckn8vmMhLGAXba1Jyyf0hqFpDoA.jpg",
+          description:
+            "Suit Salwar 6 – Add grace and glam to your special events.",
+        },
+      ];
+
+      /* RENDER PRODUCTS */
+      function renderProducts() {
+        const grid = document.getElementById("productsGrid");
+        grid.innerHTML = ""; // Clear
+
+        products.forEach((p) => {
+          // Card HTML
+          const card = document.createElement("div");
+          card.className =
+            "border p-4 rounded-lg bg-white shadow-sm hover:shadow-lg transition-shadow duration-300 mb-4";
+
+          card.innerHTML = `
+            <!-- Image -->
+            <div class="relative overflow-hidden">
+              <img
+                src="${p.image}"
+                alt="${p.name}"
+                class="w-full h-48 object-cover cursor-pointer transform transition-transform duration-300 hover:scale-105"
+                onclick="openImagePreview('${p.image}')"
+              />
+              <span class="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded">
+                -${p.discount}%
+              </span>
+            </div>
+            <!-- Title & Info -->
+            <h2 class="text-lg font-semibold mt-4">${p.name}</h2>
+            <div class="flex items-center mt-2">
+              <div class="flex items-center text-yellow-500 text-sm">
+                ${renderStars(p.rating)}
+              </div>
+              <span class="text-gray-600 ml-2 text-sm">${p.reviews} reviews</span>
+            </div>
+            <div class="text-gray-500 line-through mt-1 text-sm">
+              Rs. ${p.oldPrice.toLocaleString("en-IN")}.00
+            </div>
+            <div class="text-xl font-bold text-gray-800">
+              Rs. ${p.price.toLocaleString("en-IN")}.00
+            </div>
+            <!-- Buy Now Button -->
+            <button
+              class="mt-4 w-full bg-white border border-gray-300 text-gray-800 py-2 rounded-lg flex items-center justify-center space-x-2 hover:bg-gray-100 transition-colors duration-300"
+              onclick="openBuyNowModal(${p.id})"
+            >
+              <i class="fas fa-shopping-bag"></i>
+              <span>BUY NOW</span>
+            </button>
+          `;
+
+          grid.appendChild(card);
+        });
+      }
+
+      function renderStars(rating) {
+        // rating = 4.5 => 4 stars + 1 half
+        const fullStars = Math.floor(rating);
+        const halfStar = rating % 1 !== 0;
+        let starsHTML = "";
+
+        for (let i = 0; i < fullStars; i++) {
+          starsHTML += `<i class="fas fa-star"></i>`;
+        }
+        if (halfStar) {
+          starsHTML += `<i class="fas fa-star-half-alt"></i>`;
+        }
+        return starsHTML;
+      }
+
+      /* OPEN BUY NOW MODAL */
+      function openBuyNowModal(productId) {
+        // Find the product
+        const product = products.find((p) => p.id === productId);
+        if (!product) return;
+
+        // Set hidden fields for UPI payment
+        document.getElementById("buyProductName").innerText = product.name;
+        document.getElementById("buyProductHiddenName").value = `Payment for ${product.name}`;
+        document.getElementById("buyProductAmount").value = product.price;
+        // Set UPI input with currentUPI
+        document.getElementById("buyProductUpi").value = currentUPI;
+
+        // Show modal
+        document.getElementById("buyNowModal").classList.remove("hidden");
+      }
+      function closeBuyNowModal() {
+        document.getElementById("buyNowModal").classList.add("hidden");
+      }
+
+      /* ADMIN LOGIN & PANEL */
+      function openAdminModal() {
+        // If already admin, show panel
+        if (isAdmin) {
+          document.getElementById("adminPanel").classList.remove("hidden");
+        } else {
+          // Show login modal
+          document.getElementById("adminLoginModal").classList.remove("hidden");
+        }
+      }
+      function closeAdminModal() {
+        document.getElementById("adminLoginModal").classList.add("hidden");
+      }
+      function closeAdminPanel() {
+        document.getElementById("adminPanel").classList.add("hidden");
+      }
+
+      // Handle admin login
+      function handleAdminLogin() {
+        const username = document.getElementById("adminUsername").value;
+        const password = document.getElementById("adminPassword").value;
+
+        // Check credentials
+        if (username === "sanam" && password === "sanam@100") {
+          isAdmin = true;
+          // Hide login, show panel
+          document.getElementById("adminLoginModal").classList.add("hidden");
+          document.getElementById("adminPanel").classList.remove("hidden");
+        } else {
+          alert("Invalid credentials!");
+        }
+      }
+
+      /* ADMIN PANEL LOGIC */
+      // Update UPI
+      function updateUPI() {
+        const newUpi = document.getElementById("newUpiAddress").value.trim();
+        if (!newUpi) {
+          alert("Please enter a valid UPI address!");
+          return;
+        }
+        currentUPI = newUpi;
+        alert("UPI Updated to: " + currentUPI);
+        // In a real app, you'd save to server
+        // For now, we just store in local variable
+      }
+
+      // Add Product
+      function addProduct() {
+        const imageURL = document.getElementById("newProductImage").value.trim();
+        const productName = document
+          .getElementById("newProductName")
+          .value.trim();
+        const productDesc = document
+          .getElementById("newProductDesc")
+          .value.trim();
+
+        if (!imageURL || !productName || !productDesc) {
+          alert("Please fill all fields for the new product!");
+          return;
+        }
+
+        // Create new product object
+        const newProduct = {
+          id: Date.now(), // quick unique ID
+          name: productName,
+          price: 999,
+          oldPrice: 1999,
+          discount: 50,
+          rating: 4.5,
+          reviews: 0,
+          image: imageURL,
+          description: productDesc,
+        };
+
+        products.push(newProduct);
+        renderProducts(); // re-render grid
+
+        // Clear fields
+        document.getElementById("newProductImage").value = "";
+        document.getElementById("newProductName").value = "";
+        document.getElementById("newProductDesc").value = "";
+
+        alert("New product added successfully!");
+      }
+
+      /* IMAGE PREVIEW */
+      function openImagePreview(imageUrl) {
+        const imageModal = document.getElementById("imagePreviewModal");
+        const previewImg = document.getElementById("previewImage");
+        previewImg.src = imageUrl;
+        imageModal.classList.remove("hidden");
+      }
+      function closeImagePreview() {
+        document.getElementById("imagePreviewModal").classList.add("hidden");
+      }
+
+      /* ON LOAD */
+      window.onload = () => {
+        renderProducts(); // Render existing products on page load
+      };
+    </script>
+  </head>
+  <body class="bg-white text-gray-800 min-h-screen">
+    <!-- Top Banner -->
+    <div class="bg-red-700 text-white text-center py-2 text-sm">
+      Get 5% OFF on All Prepaid Orders, Use Code: PAY5
+    </div>
+
+    <!-- Header -->
+    <header class="flex items-center justify-between px-4 py-2 border-b">
+      <div class="flex items-center space-x-4">
+        <!-- Administration Button -->
+        <button
+          class="text-xl px-3 py-1 bg-gray-800 text-white rounded hover:bg-black transition"
+          onclick="openAdminModal()"
+        >
+          Administration
+        </button>
+
+        <!-- Logo -->
+        <img
+          src="https://storage.googleapis.com/a1aa/image/vrJoeVyGLs0aMqoDnDYZUBhUqX3OgxOxDJua7AmNnyKeg0BUA.jpg"
+          alt="Zarkan Logo"
+          class="h-10 w-auto"
+        />
+      </div>
+      <!-- Right side icons -->
+      <div class="flex items-center space-x-4">
+        <!-- Search -->
+        <button class="text-xl">
+          <i class="fas fa-search"></i>
+        </button>
+        <!-- Heart -->
+        <button class="text-xl">
+          <i class="fas fa-heart"></i>
+        </button>
+        <!-- Bag -->
+        <button class="text-xl">
+          <i class="fas fa-shopping-bag"></i>
+        </button>
+        <!-- User -->
+        <button class="text-xl">
+          <i class="fas fa-user"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="px-4 py-6 container mx-auto">
+      <h1 class="text-2xl font-semibold text-center mb-4">
+        Perfect Gift for Your Partner
+      </h1>
+      <!-- Sort & Layout (Placeholder, not functional) -->
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center space-x-2">
+          <span class="text-gray-600">Sort:</span>
+          <select class="border border-gray-300 rounded px-2 py-1">
+            <option>Best selling</option>
+          </select>
+        </div>
+        <div class="flex items-center space-x-2">
+          <i class="fas fa-th-large text-xl"></i>
+          <i class="fas fa-th-list text-xl"></i>
+        </div>
+      </div>
+
+      <!-- PRODUCT GRID (dynamic) -->
+      <div
+        id="productsGrid"
+        class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
+      ></div>
+    </main>
+
+    <!-- FOOTER (Optional) -->
+    <footer class="text-center py-4 border-t">
+      <p>© 2025 Zarkan Jewelry. All Rights Reserved.</p>
+    </footer>
+
+    <!-- IMAGE PREVIEW MODAL -->
+    <div
+      id="imagePreviewModal"
+      class="hidden fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center"
+    >
+      <div class="relative bg-white rounded p-4 max-w-md w-full">
+        <button
+          class="absolute top-2 right-2 text-gray-600 hover:text-gray-900"
+          onclick="closeImagePreview()"
+        >
+          <i class="fas fa-times"></i>
+        </button>
+        <img
+          id="previewImage"
+          src=""
+          alt="Preview"
+          class="w-full h-auto object-contain rounded"
+        />
+      </div>
+    </div>
+
+    <!-- BUY NOW MODAL (Generic) -->
+    <div
+      id="buyNowModal"
+      class="hidden fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center"
+    >
+      <div class="relative bg-white rounded p-6 max-w-lg w-full">
+        <button
+          class="absolute top-2 right-2 text-gray-600 hover:text-gray-900"
+          onclick="closeBuyNowModal()"
+        >
+          <i class="fas fa-times"></i>
+        </button>
+        <h2
+          class="text-xl font-semibold mb-4"
+        >
+          Buy <span id="buyProductName" class="text-red-600"></span>
+        </h2>
+        <!-- UPI Payment Form -->
+        <form action="upi://pay" method="GET">
+          <!-- UPI Hidden Fields -->
+          <!-- We'll dynamically set them via JS. The 'tn' gets set to product name, 'am' to product price, 'pa' to currentUPI -->
+          <input
+            type="hidden"
+            id="buyProductUpi"
+            name="pa"
+            value="hanjla1@paytm"
+          />
+          <input type="hidden" name="pn" value="Zarkan" />
+          <input
+            type="hidden"
+            id="buyProductHiddenName"
+            name="tn"
+            value=""
+          />
+          <input
+            type="hidden"
+            id="buyProductAmount"
+            name="am"
+            value=""
+          />
+          <input type="hidden" name="cu" value="INR" />
+
+          <!-- Additional Input Fields (size, color, etc.) -->
+          <fieldset class="space-y-3 mb-4">
+            <label class="block">
+              <span class="text-gray-700">Size</span>
+              <select
+                name="size"
+                class="border border-gray-300 rounded px-2 py-1 w-full"
+                required
+              >
+                <option value="">Select Size</option>
+                <option>S</option>
+                <option>M</option>
+                <option>L</option>
+                <option>XL</option>
+              </select>
+            </label>
+            <label class="block">
+              <span class="text-gray-700">Pieces</span>
+              <input
+                type="number"
+                name="pieces"
+                value="1"
+                min="1"
+                class="border border-gray-300 rounded px-2 py-1 w-full"
+                required
+              />
+            </label>
+            <label class="block">
+              <span class="text-gray-700">Color</span>
+              <input
+                type="text"
+                name="color"
+                placeholder="Enter color choice"
+                class="border border-gray-300 rounded px-2 py-1 w-full"
+                required
+              />
+            </label>
+            <label class="block">
+              <span class="text-gray-700">Full Name</span>
+              <input
+                type="text"
+                name="fullName"
+                placeholder="Enter your full name"
+                class="border border-gray-300 rounded px-2 py-1 w-full"
+                required
+              />
+            </label>
+            <label class="block">
+              <span class="text-gray-700">Address</span>
+              <input
+                type="text"
+                name="address"
+                placeholder="Enter address"
+                class="border border-gray-300 rounded px-2 py-1 w-full"
+                required
+              />
+            </label>
+            <label class="block">
+              <span class="text-gray-700">City</span>
+              <input
+                type="text"
+                name="city"
+                placeholder="City"
+                class="border border-gray-300 rounded px-2 py-1 w-full"
+                required
+              />
+            </label>
+            <label class="block">
+              <span class="text-gray-700">Pin Code</span>
+              <input
+                type="text"
+                name="pincode"
+                placeholder="Pin Code"
+                class="border border-gray-300 rounded px-2 py-1 w-full"
+                required
+              />
+            </label>
+            <label class="block">
+              <span class="text-gray-700">State</span>
+              <input
+                type="text"
+                name="state"
+                placeholder="State"
+                class="border border-gray-300 rounded px-2 py-1 w-full"
+                required
+              />
+            </label>
+            <label class="block">
+              <span class="text-gray-700">Phone Number</span>
+              <input
+                type="text"
+                name="phone"
+                placeholder="Phone Number"
+                class="border border-gray-300 rounded px-2 py-1 w-full"
+                required
+              />
+            </label>
+          </fieldset>
+
+          <!-- Submit Button -->
+          <button
+            type="submit"
+            class="w-full bg-black text-white py-2 rounded hover:bg-gray-700 transition"
+          >
+            Proceed to Pay
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ADMIN LOGIN MODAL -->
+    <div
+      id="adminLoginModal"
+      class="hidden fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center"
+    >
+      <div class="relative bg-white rounded p-6 max-w-sm w-full">
+        <button
+          class="absolute top-2 right-2 text-gray-600 hover:text-gray-900"
+          onclick="closeAdminModal()"
+        >
+          <i class="fas fa-times"></i>
+        </button>
+        <h2 class="text-xl font-semibold mb-4 text-gray-800">Admin Login</h2>
+        <div class="space-y-3">
+          <input
+            type="text"
+            id="adminUsername"
+            placeholder="Username"
+            class="border border-gray-300 rounded px-2 py-1 w-full"
+          />
+          <input
+            type="password"
+            id="adminPassword"
+            placeholder="Password"
+            class="border border-gray-300 rounded px-2 py-1 w-full"
+          />
+          <button
+            class="w-full bg-gray-800 text-white py-2 rounded hover:bg-black transition"
+            onclick="handleAdminLogin()"
+          >
+            Login
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ADMIN PANEL -->
+    <div
+      id="adminPanel"
+      class="hidden fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center"
+    >
+      <div
+        class="relative bg-white rounded p-6 max-w-xl w-full text-gray-800 overflow-auto"
+        style="max-height: 90vh;"
+      >
+        <button
+          class="absolute top-2 right-2 text-gray-600 hover:text-gray-900"
+          onclick="closeAdminPanel()"
+        >
+          <i class="fas fa-times"></i>
+        </button>
+        <h2 class="text-2xl font-bold mb-4">Admin Panel</h2>
+
+        <!-- Change UPI -->
+        <div class="mb-6 border-b pb-4">
+          <h3 class="text-xl font-semibold mb-2">Change UPI</h3>
+          <div class="flex space-x-2 items-center">
+            <input
+              id="newUpiAddress"
+              type="text"
+              class="border border-gray-300 rounded px-2 py-1 flex-1"
+              placeholder="Enter new UPI (e.g. newupi@paytm)"
+            />
+            <button
+              class="bg-blue-600 text-white px-4 py-1 rounded hover:bg-blue-700 transition"
+              onclick="updateUPI()"
+            >
+              Update
+            </button>
+          </div>
+        </div>
+
+        <!-- Add Product -->
+        <div>
+          <h3 class="text-xl font-semibold mb-2">Add New Product</h3>
+          <div class="space-y-2">
+            <input
+              id="newProductImage"
+              type="text"
+              placeholder="Image URL"
+              class="border border-gray-300 rounded px-2 py-1 w-full"
+            />
+            <input
+              id="newProductName"
+              type="text"
+              placeholder="Product Name"
+              class="border border-gray-300 rounded px-2 py-1 w-full"
+            />
+            <textarea
+              id="newProductDesc"
+              placeholder="Product Description"
+              class="border border-gray-300 rounded px-2 py-1 w-full"
+            ></textarea>
+            <button
+              class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition"
+              onclick="addProduct()"
+            >
+              Add Product
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
